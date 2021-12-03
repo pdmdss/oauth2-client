@@ -5,8 +5,9 @@
   "main": "dist/node.js",
   "types": "typescript.d.ts",
   "scripts": {
-    "biuid:node": "npx webpack --config webpack.node.config.js",
-    "biuid:browser": "npx webpack --config webpack.browser.config.js"
+    "build:node": "npx webpack --config webpack.node.config.js",
+    "build:browser": "npx webpack --config webpack.browser.config.js",
+    "install": "npm run build:node"
   },
   "author": "soshi1822",
   "license": "MIT",
