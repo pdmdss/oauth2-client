@@ -7,6 +7,7 @@ import {
 } from '@/types';
 import { nanoid } from 'nanoid';
 import { SubWindow } from '@/code/sub';
+import { sha256Digest } from '@/lib/hash';
 
 export class OAuth2Code implements OAuth2 {
   private accessToken?: {
@@ -58,6 +59,18 @@ export class OAuth2Code implements OAuth2 {
     query.set('response_mode', 'fragment');
     query.set('state', state);
 
+    let pkce: string | null = null;
+    if (this.option.pkce) {
+      if (this.option.pkce === true) {
+        this.option.pkce = 'S256';
+      }
+
+      pkce = nanoid(43);
+
+      query.set('code_challenge', await sha256Digest(pkce));
+      query.set('code_challenge_method', this.option.pkce);
+    }
+
     if (this.option.client.scopes) {
       query.set('scope', this.option.client.scopes.join(' '));
     }
@@ -74,14 +87,15 @@ export class OAuth2Code implements OAuth2 {
       };
     }
 
-    return this.authorizationAccessToken(authCode);
+    return this.authorizationAccessToken(authCode, pkce);
   }
 
-  private authorizationAccessToken(code: string) {
+  private authorizationAccessToken(code: string, pkce: string | null) {
     return this.post<OAuth2TokenEndpointAuthorizationCode>({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: this.option.client.redirectUri ?? ''
+      redirect_uri: this.option.client.redirectUri,
+      code_verifier: pkce
     });
   }
 
@@ -89,13 +103,15 @@ export class OAuth2Code implements OAuth2 {
     return this.post<OAuth2TokenEndpointRefreshToken>({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
-      scope: this.option.client.scopes?.join(' ') ?? ''
+      scope: this.option.client.scopes?.join(' ')
     });
   }
 
-  private post<T>(form: Record<string, string>) {
+  private post<T>(form: Record<string, string | undefined | null>) {
+    const formData = Object.entries(form).filter((r): r is [string, string] => typeof r[1] === 'string');
+
     return axios.post<T>(
-      this.option.endpoint.token, new URLSearchParams(form), {
+      this.option.endpoint.token, new URLSearchParams(formData), {
         headers: {
           authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`)
         }
