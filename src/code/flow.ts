@@ -20,6 +20,10 @@ export class OAuth2Code extends OAuth2 {
     return accessToken.token;
   }
 
+  getRefreshToken() {
+    return this.option.refreshToken;
+  }
+
   private async getAccessToken() {
     const { data } =
       typeof this.option.refreshToken === 'string' ?
@@ -38,7 +42,6 @@ export class OAuth2Code extends OAuth2 {
       exp: exp.getTime()
     };
   }
-
 
   private async authorization() {
     const state = nanoid(32);
