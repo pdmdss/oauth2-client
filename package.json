@@ -1,6 +1,6 @@
 {
   "name": "@dmdata/oauth2-clinet",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/node.js",
   "types": "typescript.d.ts",
