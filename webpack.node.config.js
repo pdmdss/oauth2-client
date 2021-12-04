@@ -8,11 +8,14 @@ fs.readdirSync('node_modules')
 
 
 module.exports = {
-    mode: 'production',
+    mode: 'development',
     entry: path.resolve(__dirname, 'index.ts'),
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'node.js'
+        filename: 'node.js',
+        library: {
+            type: 'commonjs'
+        }
     },
     resolve: {
         extensions: ['.ts']
