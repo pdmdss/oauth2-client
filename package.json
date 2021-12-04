@@ -1,5 +1,5 @@
 {
-  "name": "@pdmdss/oauth2-clinet",
+  "name": "@dmdata/oauth2-clinet",
   "version": "1.0.0",
   "description": "",
   "main": "dist/node.js",
@@ -7,7 +7,11 @@
   "scripts": {
     "build:node": "npx webpack --config webpack.node.config.js",
     "build:browser": "npx webpack --config webpack.browser.config.js",
-    "install": "npm run build:node"
+    "prepublishOnly": "npm run build:node"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pdmdss/oauth2-client.git"
   },
   "author": "soshi1822",
   "license": "MIT",
