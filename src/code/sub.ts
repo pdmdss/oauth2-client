@@ -1,4 +1,4 @@
-import { SubWindowDetails } from '@/types';
+import { SubWindowDetails } from '../types';
 
 export class SubWindow {
   static SHARE_OBJECT_PREFIX = 'oauth2.code.flow';
