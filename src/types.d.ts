@@ -1,10 +1,3 @@
-export class OAuth2 {
-  constructor(option: OAuth2Option);
-
-  getAuthorization(): Promise<string>;
-}
-
-
 export interface OAuth2Client {
   id: string;
   secret?: string;

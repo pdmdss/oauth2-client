@@ -8,10 +8,7 @@ module.exports = {
         filename: `web.js`
     },
     resolve: {
-        extensions: ['.ts', '.js'],
-        alias: {
-            '@': path.resolve(__dirname, 'src')
-        }
+        extensions: ['.ts', '.js']
     },
     target: 'web',
     module: {

@@ -1,4 +1,4 @@
-import { SubWindowMode } from '@/code';
+import { SubWindowMode } from './code';
 
 export * from './code';
 

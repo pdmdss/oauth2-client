@@ -1,21 +1,13 @@
 import axios from 'axios';
-import {
-  OAuth2,
-  OAuth2CodeOption,
-  OAuth2TokenEndpointAuthorizationCode,
-  OAuth2TokenEndpointRefreshToken
-} from '@/types';
 import { nanoid } from 'nanoid';
-import { SubWindow } from '@/code/sub';
-import { sha256Digest } from '@/lib/hash';
+import { OAuth2 } from '../oauth2';
+import { sha256Digest } from '../lib/hash';
+import { SubWindow } from './sub';
+import { OAuth2CodeOption, OAuth2TokenEndpointAuthorizationCode, OAuth2TokenEndpointRefreshToken } from '../types';
 
-export class OAuth2Code implements OAuth2 {
-  private accessToken?: {
-    token: string;
-    exp: number;
-  };
-
+export class OAuth2Code extends OAuth2 {
   constructor(private option: OAuth2CodeOption) {
+    super(option);
   }
 
   async getAuthorization(): Promise<string> {
