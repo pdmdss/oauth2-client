@@ -8,7 +8,7 @@ fs.readdirSync('node_modules')
 
 
 module.exports = {
-    mode: 'development',
+    mode: 'production',
     entry: path.resolve(__dirname, 'index.ts'),
     output: {
         path: path.resolve(__dirname, 'dist'),
