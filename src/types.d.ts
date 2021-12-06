@@ -18,6 +18,7 @@ export interface OAuth2Option {
 export interface OAuth2CodeOption extends OAuth2Option {
   refreshToken?: string;
   pkce?: 'S256' | 'plain' | true;
+  waitingStart?: boolean;
 }
 
 export interface OAuth2TokenEndpointAuthorizationCode {

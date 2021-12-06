@@ -11,22 +11,53 @@ import {
 } from '../types';
 
 export class OAuth2Code extends OAuth2 {
+  private waiting = this.option.waitingStart ?? false;
+
   constructor(private option: OAuth2CodeOption) {
     super(option);
   }
 
   async getAuthorization(): Promise<string> {
+    if (this.waiting) {
+      await this.authorizationWaiting();
+    }
+
     if (this.accessToken && this.accessToken.exp > Date.now()) {
       return this.accessToken.token;
     }
 
+    this.startWait();
+
     const accessToken = await this.getAccessToken();
+
+    this.endWait();
 
     return accessToken.token;
   }
 
+  startWait() {
+    this.waiting = true;
+  }
+
   getRefreshToken() {
     return this.option.refreshToken;
+  }
+
+  endWait() {
+    this.waiting = false;
+  }
+
+  private authorizationWaiting() {
+    return new Promise<void>(resolve => {
+      const internal = setInterval(() => {
+        if (this.waiting) {
+          return;
+        }
+
+        clearInterval(internal);
+        resolve();
+      }, 50);
+    });
   }
 
   private async getAccessToken() {
@@ -125,27 +156,33 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private authorizationAccessToken(code: string, pkce: string | null) {
-    return this.post<OAuth2TokenEndpointAuthorizationCode>({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: this.option.client.redirectUri,
-      code_verifier: pkce
-    });
+    return this.post<OAuth2TokenEndpointAuthorizationCode>(
+      this.option.endpoint.token,
+      {
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: this.option.client.redirectUri,
+        code_verifier: pkce
+      });
   }
 
   private refreshGetAccessToken(refreshToken: string) {
-    return this.post<OAuth2TokenEndpointRefreshToken>({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      scope: this.option.client.scopes?.join(' ')
-    });
+    return this.post<OAuth2TokenEndpointRefreshToken>(
+      this.option.endpoint.token,
+      {
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        scope: this.option.client.scopes?.join(' ')
+      });
   }
 
-  private post<T>(form: Record<string, string | undefined | null>) {
+  private post<T>(url: string, form: Record<string, string | undefined | null>) {
     const formData = Object.entries(form).filter((r): r is [string, string] => typeof r[1] === 'string');
 
-    return axios.post<T>(
-      this.option.endpoint.token, new URLSearchParams(formData), {
+    return axios.post<T>
+    (url,
+      new URLSearchParams(formData),
+      {
         headers: {
           authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`)
         }
