@@ -3,7 +3,12 @@ import { nanoid } from 'nanoid';
 import { OAuth2 } from '../oauth2';
 import { sha256Digest } from '../lib/hash';
 import { SubWindow } from './sub';
-import { OAuth2CodeOption, OAuth2TokenEndpointAuthorizationCode, OAuth2TokenEndpointRefreshToken } from '../types';
+import {
+  OAuth2CodeOption,
+  OAuth2IntrospectEndpoint,
+  OAuth2TokenEndpointAuthorizationCode,
+  OAuth2TokenEndpointRefreshToken
+} from '../types';
 
 export class OAuth2Code extends OAuth2 {
   constructor(private option: OAuth2CodeOption) {
@@ -41,6 +46,40 @@ export class OAuth2Code extends OAuth2 {
       token: `${data.token_type} ${data.access_token}`,
       exp: exp.getTime()
     };
+  }
+
+  private async revoke(type: 'access_token' | 'refresh_token' = 'access_token') {
+    const endpoint = this.option.endpoint.revoke;
+
+    if (!endpoint) {
+      return false;
+    }
+
+    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
+
+    if (!token) {
+      return true;
+    }
+
+    await this.post(endpoint, { token: token });
+
+    return true;
+  }
+
+  private async introspect(type: 'access_token' | 'refresh_token' = 'access_token') {
+    const endpoint = this.option.endpoint.introspect;
+
+    if (!endpoint) {
+      return false;
+    }
+
+    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
+
+    if (!token) {
+      return null;
+    }
+
+    return this.post<OAuth2IntrospectEndpoint>(endpoint, { token: token });
   }
 
   private async authorization() {

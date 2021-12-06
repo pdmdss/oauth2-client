@@ -36,6 +36,20 @@ export interface OAuth2TokenEndpointRefreshToken {
   scope: string;
 }
 
+export type OAuth2IntrospectEndpoint = {
+  active: true;
+  scope: string;
+  client_id: string;
+  aud: string;
+  sub: string;
+  username: string;
+  iss: string;
+  iat: number;
+  exp: number;
+} | {
+  active: false;
+}
+
 export interface SubWindowDetails {
   state: string;
   authCode?: string;
