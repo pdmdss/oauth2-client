@@ -60,7 +60,12 @@ export class SubWindowMode {
   }
 
   static get isSubWindowMode() {
-    return window.opener?.closed === false;
+    try {
+      return window.opener?.closed === false &&
+        new RegExp(window.location.href).test(window.opener.location.href);
+    } catch (e) {
+      return false;
+    }
   }
 
   static start() {
