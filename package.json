@@ -3,11 +3,12 @@
   "version": "1.1.2",
   "description": "",
   "main": "dist/node.js",
-  "types": "typescript.d.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build:node": "npx webpack --config webpack.node.config.js",
     "build:browser": "npx webpack --config webpack.browser.config.js",
-    "prepublishOnly": "npm run build:node"
+    "create:declaration": "tsc --declaration --emitDeclarationOnly",
+    "prepublishOnly": "npm run create:declaration & npm run build:node"
   },
   "repository": {
     "type": "git",

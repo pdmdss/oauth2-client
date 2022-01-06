@@ -1,6 +1,7 @@
 /node_modules/
 /dist/
 /.idea/
+/src/
 /dist/web.js
 /index.ts
 /web.ts
