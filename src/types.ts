@@ -1,3 +1,5 @@
+import { DPoPAlgorithm } from './lib/dpop';
+
 export interface OAuth2Client {
   id: string;
   secret?: string;
@@ -19,6 +21,7 @@ export interface OAuth2CodeOption extends OAuth2Option {
   refreshToken?: string;
   pkce?: 'S256' | 'plain' | true;
   waitingStart?: boolean;
+  dpop?: DPoPAlgorithm | true;
 }
 
 export interface OAuth2TokenEndpointAuthorizationCode {

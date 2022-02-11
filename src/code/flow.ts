@@ -1,6 +1,7 @@
-import axios from 'axios';
+import axios, { AxiosRequestHeaders } from 'axios';
 import { nanoid } from 'nanoid';
 import { OAuth2 } from '../oauth2';
+import { DPoP, DPoPAlgorithm } from '../lib/dpop';
 import { sha256Digest } from '../lib/hash';
 import { SubWindow } from './sub';
 import {
@@ -12,6 +13,7 @@ import {
 
 export class OAuth2Code extends OAuth2 {
   private waiting = this.option.waitingStart ?? false;
+  private dpop: DPoP | null = null;
 
   constructor(private option: OAuth2CodeOption) {
     super(option);
@@ -33,6 +35,22 @@ export class OAuth2Code extends OAuth2 {
     this.endWait();
 
     return accessToken.token;
+  }
+
+  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude: true): Promise<{ dpop: string } | null>;
+  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude?: false): Promise<string | null>;
+  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude = false) {
+    const jwt = await this.dpop?.getDPoPProofJWT(method, uri);
+
+    if (!jwt) {
+      return null;
+    }
+
+    if (isHeaderInclude) {
+      return { dpop: jwt };
+    }
+
+    return jwt;
   }
 
   startWait() {
@@ -61,6 +79,14 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private async getAccessToken() {
+    if (this.option.dpop) {
+      if (this.option.dpop === true) {
+        this.option.dpop = 'ES256';
+      }
+
+      await this.createDPoP(this.option.dpop);
+    }
+
     const { data } =
       typeof this.option.refreshToken === 'string' ?
         await this.refreshGetAccessToken(this.option.refreshToken) :
@@ -72,6 +98,10 @@ export class OAuth2Code extends OAuth2 {
 
     const exp = new Date();
     exp.setSeconds(exp.getSeconds() + data.expires_in);
+
+    if (data.token_type !== 'DPoP') {
+      this.dpop = null;
+    }
 
     return this.accessToken = {
       token: `${data.token_type} ${data.access_token}`,
@@ -155,28 +185,36 @@ export class OAuth2Code extends OAuth2 {
     return this.authorizationAccessToken(authCode, pkce);
   }
 
-  private authorizationAccessToken(code: string, pkce: string | null) {
-    return this.post<OAuth2TokenEndpointAuthorizationCode>(
+  private async authorizationAccessToken(code: string, pkce: string | null) {
+    return await this.post<OAuth2TokenEndpointAuthorizationCode>(
       this.option.endpoint.token,
       {
         grant_type: 'authorization_code',
         code,
         redirect_uri: this.option.client.redirectUri,
         code_verifier: pkce
-      });
+      },
+      {
+        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true)
+      }
+    );
   }
 
-  private refreshGetAccessToken(refreshToken: string) {
-    return this.post<OAuth2TokenEndpointRefreshToken>(
+  private async refreshGetAccessToken(refreshToken: string) {
+    return await this.post<OAuth2TokenEndpointRefreshToken>(
       this.option.endpoint.token,
       {
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
         scope: this.option.client.scopes?.join(' ')
-      });
+      },
+      {
+        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true)
+      }
+    );
   }
 
-  private post<T>(url: string, form: Record<string, string | undefined | null>) {
+  private post<T>(url: string, form: Record<string, string | undefined | null>, headers: AxiosRequestHeaders = {}) {
     const formData = Object.entries(form).filter((r): r is [string, string] => typeof r[1] === 'string');
 
     return axios.post<T>
@@ -184,8 +222,13 @@ export class OAuth2Code extends OAuth2 {
       new URLSearchParams(formData),
       {
         headers: {
+          ...headers,
           authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`)
         }
       });
+  }
+
+  private async createDPoP(alg: DPoPAlgorithm) {
+    return this.dpop = await DPoP.create(alg);
   }
 }

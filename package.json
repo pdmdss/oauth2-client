@@ -2,11 +2,11 @@
   "name": "@dmdata/oauth2-client",
   "version": "1.1.5",
   "description": "",
-  "main": "dist/node.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "publish:npm": "npm publish --access=public",
-    "build:node": "npx webpack --config webpack.node.config.js",
+    "build:node": "npx tsc",
     "build:browser": "npx webpack --config webpack.browser.config.js",
     "create:declaration": "tsc --declaration --emitDeclarationOnly",
     "prepublishOnly": "npm run create:declaration & npm run build:node"
