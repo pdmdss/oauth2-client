@@ -72,6 +72,40 @@ export class OAuth2Code extends OAuth2 {
     this.waiting = false;
   }
 
+  async revoke(type: 'access_token' | 'refresh_token' = 'access_token') {
+    const endpoint = this.option.endpoint.revoke;
+
+    if (!endpoint) {
+      return false;
+    }
+
+    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
+
+    if (!token) {
+      return true;
+    }
+
+    await this.post(endpoint, { token: token });
+
+    return true;
+  }
+
+  async introspect(type: 'access_token' | 'refresh_token' = 'access_token') {
+    const endpoint = this.option.endpoint.introspect;
+
+    if (!endpoint) {
+      return false;
+    }
+
+    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
+
+    if (!token) {
+      return null;
+    }
+
+    return this.post<OAuth2IntrospectEndpoint>(endpoint, { token: token });
+  }
+
   private authorizationWaiting() {
     return new Promise<void>(resolve => {
       const internal = setInterval(() => {
@@ -110,40 +144,6 @@ export class OAuth2Code extends OAuth2 {
       token: `${data.token_type} ${data.access_token}`,
       exp: exp.getTime()
     };
-  }
-
-  private async revoke(type: 'access_token' | 'refresh_token' = 'access_token') {
-    const endpoint = this.option.endpoint.revoke;
-
-    if (!endpoint) {
-      return false;
-    }
-
-    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
-
-    if (!token) {
-      return true;
-    }
-
-    await this.post(endpoint, { token: token });
-
-    return true;
-  }
-
-  private async introspect(type: 'access_token' | 'refresh_token' = 'access_token') {
-    const endpoint = this.option.endpoint.introspect;
-
-    if (!endpoint) {
-      return false;
-    }
-
-    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
-
-    if (!token) {
-      return null;
-    }
-
-    return this.post<OAuth2IntrospectEndpoint>(endpoint, { token: token });
   }
 
   private async authorization() {
