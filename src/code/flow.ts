@@ -1,10 +1,13 @@
 import axios, { AxiosRequestHeaders } from 'axios';
 import { nanoid } from 'nanoid';
 import { OAuth2 } from '../oauth2';
-import { DPoP, DPoPAlgorithm } from '../lib/dpop';
+import { DPoP } from '../lib/dpop';
 import { sha256Digest } from '../lib/hash';
 import { SubWindow } from './sub';
 import {
+  DPoPAlgorithm,
+  DPoPAlgorithmName,
+  Keypair,
   OAuth2CodeOption,
   OAuth2IntrospectEndpoint,
   OAuth2TokenEndpointAuthorizationCode,
@@ -35,6 +38,10 @@ export class OAuth2Code extends OAuth2 {
     this.endWait();
 
     return accessToken.token;
+  }
+
+  getDPoPKeypair() {
+    return this.dpop?.getDPoPKeypair();
   }
 
   async getDPoPProofJWT(method: string, uri: string, isHeaderInclude: true): Promise<{ dpop: string } | null>;
@@ -80,10 +87,6 @@ export class OAuth2Code extends OAuth2 {
 
   private async getAccessToken() {
     if (this.option.dpop) {
-      if (this.option.dpop === true) {
-        this.option.dpop = 'ES256';
-      }
-
       await this.createDPoP(this.option.dpop);
     }
 
@@ -228,7 +231,7 @@ export class OAuth2Code extends OAuth2 {
       });
   }
 
-  private async createDPoP(alg: DPoPAlgorithm) {
-    return this.dpop = await DPoP.create(alg);
+  private async createDPoP(data: DPoPAlgorithm | DPoPAlgorithmName | Keypair) {
+    return this.dpop = await DPoP.create(data);
   }
 }

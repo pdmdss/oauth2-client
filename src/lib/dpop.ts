@@ -1,16 +1,39 @@
 import { JWT } from './jwt';
 import { nanoid } from 'nanoid';
-import { Algorithm, webCryptoAlgorithmGenerateKey } from './webcrypto.algorithms';
-
-export type DPoPAlgorithm = Exclude<Algorithm, 'HS256' | 'HS384' | 'HS512'>;
+import { webCryptoAlgorithmGenerateKey, webCryptoAlgorithmImportKey } from './webcrypto.algorithms';
+import { DPoPAlgorithm, DPoPAlgorithmName, Keypair } from '../types';
 
 export class DPoP {
   private constructor(private algorithm: DPoPAlgorithm, private privateKey: CryptoKey, private publicKey: CryptoKey) {
   }
 
-  static async create(alg: DPoPAlgorithm = 'ES256') {
+  static async create(data: DPoPAlgorithm | DPoPAlgorithmName | Keypair) {
+    if (typeof data === 'object' && 'privateKey' in data && 'publicKey' in data) {
+      const params = webCryptoAlgorithmImportKey(data.alg) !;
+
+      const privateKey = await window.crypto.subtle.importKey(
+        'jwk',
+        data.privateKey,
+        params,
+        true,
+        ['sign']
+      );
+      const publicKey = await window.crypto.subtle.importKey(
+        'jwk',
+        data.publicKey,
+        params,
+        true,
+        ['verify']
+      );
+
+      return new DPoP(data.alg, privateKey, publicKey);
+    }
+    if (typeof data === 'string') {
+      data = { alg: data };
+    }
+
     const keyPair = await window.crypto.subtle.generateKey(
-      webCryptoAlgorithmGenerateKey(alg)!,
+      webCryptoAlgorithmGenerateKey(data.alg)!,
       true,
       ['sign', 'verify']
     );
@@ -19,7 +42,7 @@ export class DPoP {
       return null;
     }
 
-    return new DPoP(alg, keyPair.privateKey, keyPair.publicKey);
+    return new DPoP(data.alg, keyPair.privateKey, keyPair.publicKey);
   }
 
   async getDPoPProofJWT(method: string, uri: string) {
@@ -48,5 +71,16 @@ export class DPoP {
     )
       .sign(this.privateKey)
       .then(jwt => jwt.toString());
+  }
+
+  async getDPoPKeypair(): Promise<Keypair> {
+    const publicKey = await window.crypto.subtle.exportKey('jwk', this.publicKey);
+    const privateKey = await window.crypto.subtle.exportKey('jwk', this.privateKey);
+
+    return {
+      alg: this.algorithm,
+      privateKey,
+      publicKey
+    };
   }
 }

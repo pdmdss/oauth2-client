@@ -1,4 +1,21 @@
-import { DPoPAlgorithm } from './lib/dpop';
+export type JWTAlgorithm =
+  'HS256' | 'HS384' | 'HS512' |
+  'RS256' | 'RS384' | 'RS512' |
+  'PS256' | 'PS384' | 'PS512' |
+  'ES256' | 'ES384' | 'ES512';
+
+export type DPoPAlgorithm = Exclude<JWTAlgorithm, 'HS256' | 'HS384' | 'HS512'>;
+
+export interface DPoPAlgorithmName {
+  alg: DPoPAlgorithm;
+}
+
+export interface Keypair {
+  alg: DPoPAlgorithm;
+  privateKey: JsonWebKey;
+  publicKey: JsonWebKey;
+}
+
 
 export interface OAuth2Client {
   id: string;
@@ -21,7 +38,7 @@ export interface OAuth2CodeOption extends OAuth2Option {
   refreshToken?: string;
   pkce?: 'S256' | 'plain' | true;
   waitingStart?: boolean;
-  dpop?: DPoPAlgorithm | true;
+  dpop?: Keypair | DPoPAlgorithmName | DPoPAlgorithm;
 }
 
 export interface OAuth2TokenEndpointAuthorizationCode {

@@ -1,9 +1,10 @@
 import { BASE64URL } from './base64';
-import { Algorithm, webCryptoAlgorithmSign } from './webcrypto.algorithms';
+import { webCryptoAlgorithmSign } from './webcrypto.algorithms';
+import { JWTAlgorithm } from '../types';
 
 export interface JWTHeader {
   typ: string;
-  alg: Algorithm;
+  alg: JWTAlgorithm;
 
   [key: string]: any;
 }

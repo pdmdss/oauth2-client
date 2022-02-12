@@ -1,10 +1,6 @@
-export type Algorithm =
-  'HS256' | 'HS384' | 'HS512' |
-  'RS256' | 'RS384' | 'RS512' |
-  'PS256' | 'PS384' | 'PS512' |
-  'ES256' | 'ES384' | 'ES512';
+import { JWTAlgorithm } from '../types';
 
-export function webCryptoAlgorithmSign(alg: Algorithm) {
+export function webCryptoAlgorithmSign(alg: JWTAlgorithm) {
   const type = alg.substring(0, 2);
   const length = alg.substring(2);
 
@@ -32,23 +28,35 @@ export function webCryptoAlgorithmSign(alg: Algorithm) {
   return null;
 }
 
-export function webCryptoAlgorithmGenerateKey(alg: Algorithm) {
+export function webCryptoAlgorithmGenerateKey(alg: JWTAlgorithm) {
+  const type = alg.substring(0, 2);
+
+  const params = webCryptoAlgorithmImportKey(alg);
+  if (params && 'hash' in params && typeof params.hash === 'string') {
+    return {
+      ...params,
+      modulusLength: 4096,
+      publicExponent: new Uint8Array([1, 0, 1])
+    };
+  }
+
+  return params;
+}
+
+
+export function webCryptoAlgorithmImportKey(alg: JWTAlgorithm) {
   const type = alg.substring(0, 2);
   const length = alg.substring(2);
 
   if (type === 'RS') {
     return {
       name: 'RSASSA-PKCS1-v1_5',
-      modulusLength: 4096,
-      publicExponent: new Uint8Array([1, 0, 1]),
       hash: `SHA-${length}`
     };
   }
   if (type === 'PS') {
     return {
       name: 'RSA-PSS',
-      modulusLength: 4096,
-      publicExponent: new Uint8Array([1, 0, 1]),
       hash: `SHA-${length}`
     };
   }
