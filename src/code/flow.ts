@@ -22,22 +22,16 @@ export class OAuth2Code extends OAuth2 {
     super(option);
   }
 
-  async getAuthorization(): Promise<string> {
-    if (this.waiting) {
-      await this.authorizationWaiting();
-    }
-
-    if (this.accessToken && this.accessToken.exp > Date.now()) {
-      return this.accessToken.token;
-    }
-
-    this.startWait();
-
+  async getAuthorization(): Promise<string>;
+  async getAuthorization(isRaw: true): Promise<{ access_token: string; token_type: string; exp: number }>;
+  async getAuthorization(isRaw?: true): Promise<string | { access_token: string; token_type: string; exp: number }> {
     const accessToken = await this.getAccessToken();
 
-    this.endWait();
+    if (isRaw) {
+      return { ...accessToken };
+    }
 
-    return accessToken.token;
+    return `${accessToken.token_type} ${accessToken.access_token}`;
   }
 
   getDPoPKeypair() {
@@ -79,7 +73,7 @@ export class OAuth2Code extends OAuth2 {
       return false;
     }
 
-    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
+    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.access_token;
 
     if (!token) {
       return true;
@@ -97,7 +91,7 @@ export class OAuth2Code extends OAuth2 {
       return false;
     }
 
-    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.token;
+    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.access_token;
 
     if (!token) {
       return null;
@@ -120,6 +114,16 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private async getAccessToken() {
+    if (this.accessToken && this.accessToken.exp > Date.now()) {
+      return this.accessToken;
+    }
+
+    if (this.waiting) {
+      await this.authorizationWaiting();
+    }
+
+    this.startWait();
+
     if (this.option.dpop) {
       await this.createDPoP(this.option.dpop);
     }
@@ -140,8 +144,11 @@ export class OAuth2Code extends OAuth2 {
       this.dpop = null;
     }
 
+    this.endWait();
+
     return this.accessToken = {
-      token: `${data.token_type} ${data.access_token}`,
+      access_token: data.access_token,
+      token_type: data.token_type,
       exp: exp.getTime()
     };
   }

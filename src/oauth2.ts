@@ -2,7 +2,8 @@ import { OAuth2Option } from './types';
 
 export class OAuth2 {
   protected accessToken?: {
-    token: string;
+    access_token: string;
+    token_type: string;
     exp: number;
   };
 
