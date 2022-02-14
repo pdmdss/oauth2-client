@@ -2,6 +2,7 @@ import { JWT } from './jwt';
 import { nanoid } from 'nanoid';
 import { webCryptoAlgorithmGenerateKey, webCryptoAlgorithmImportKey } from './webcrypto.algorithms';
 import { DPoPAlgorithm, DPoPAlgorithmName, Keypair } from '../types';
+import { sha256Digest } from './hash';
 
 export class DPoP {
   private constructor(private algorithm: DPoPAlgorithm, private privateKey: CryptoKey, private publicKey: CryptoKey) {
@@ -45,7 +46,7 @@ export class DPoP {
     return new DPoP(data.alg, keyPair.privateKey, keyPair.publicKey);
   }
 
-  async getDPoPProofJWT(method: string, uri: string) {
+  async getDPoPProofJWT(method: string, uri: string, token?: string) {
     const jwk = await window.crypto.subtle.exportKey('jwk', this.publicKey);
 
     return JWT.encode(
@@ -66,7 +67,8 @@ export class DPoP {
         jti: nanoid(12),
         htm: method,
         htu: uri,
-        iat: Math.floor((Date.now() / 1000))
+        iat: Math.floor((Date.now() / 1000)),
+        ath: token && await sha256Digest(token)
       }
     )
       .sign(this.privateKey)

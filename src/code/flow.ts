@@ -38,10 +38,12 @@ export class OAuth2Code extends OAuth2 {
     return this.dpop?.getDPoPKeypair();
   }
 
-  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude: true): Promise<{ dpop: string } | null>;
-  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude?: false): Promise<string | null>;
-  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude = false) {
-    const jwt = await this.dpop?.getDPoPProofJWT(method, uri);
+  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude: true, isTokenInclude?: boolean): Promise<{ dpop: string } | null>;
+  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude?: false, isTokenInclude?: boolean): Promise<string | null>;
+  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude = false, isTokenInclude = true) {
+    const token = isTokenInclude ? await this.getAuthorization(true).then(e => e.access_token) : undefined;
+
+    const jwt = await this.dpop?.getDPoPProofJWT(method, uri, token);
 
     if (!jwt) {
       return null;
@@ -205,7 +207,7 @@ export class OAuth2Code extends OAuth2 {
         code_verifier: pkce
       },
       {
-        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true)
+        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true, false)
       }
     );
   }
@@ -219,7 +221,7 @@ export class OAuth2Code extends OAuth2 {
         scope: this.option.client.scopes?.join(' ')
       },
       {
-        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true)
+        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true, false)
       }
     );
   }
