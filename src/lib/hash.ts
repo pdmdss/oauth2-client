@@ -1,6 +1,12 @@
-import { enc, SHA256 } from 'crypto-js';
+import { BASE64URL } from './base64';
 
 export async function sha256Digest(msg: string) {
-  return SHA256(msg).toString(enc.Base64)
-    .replace(/[+/=]/g, s => s === '+' ? '-' : s === '/' ? '_' : '');
+  const encoder = new TextEncoder();
+
+  return BASE64URL.encode(
+    new Uint8Array(
+      await window.crypto.subtle.digest({ name: 'SHA-256' }, encoder.encode(msg).buffer
+      )
+    )
+  );
 }
