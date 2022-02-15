@@ -127,7 +127,7 @@ export class OAuth2Code extends OAuth2 {
     this.startWait();
 
     if (this.option.dpop) {
-      await this.createDPoP(this.option.dpop);
+      await this.createDPoP(typeof this.option.dpop !== 'string' ? { alg: this.option.dpop.alg } : this.option.dpop);
     }
 
     const { data } =
