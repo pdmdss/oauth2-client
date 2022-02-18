@@ -46,7 +46,7 @@ export class DPoP {
     return new DPoP(data.alg, keyPair.privateKey, keyPair.publicKey);
   }
 
-  async getDPoPProofJWT(method: string, uri: string, token?: string) {
+  async getDPoPProofJWT(method: string, uri: string, token?: string, nonce?: string) {
     const jwk = await window.crypto.subtle.exportKey('jwk', this.publicKey);
 
     return JWT.encode(
@@ -68,7 +68,8 @@ export class DPoP {
         htm: method,
         htu: uri,
         iat: Math.floor((Date.now() / 1000)),
-        ath: token && await sha256Digest(token)
+        ath: token && await sha256Digest(token),
+        nonce
       }
     )
       .sign(this.privateKey)

@@ -1,4 +1,4 @@
-import axios, { AxiosRequestHeaders } from 'axios';
+import axios, { AxiosRequestHeaders, AxiosResponse } from 'axios';
 import { nanoid } from 'nanoid';
 import { OAuth2 } from '../oauth2';
 import { DPoP } from '../lib/dpop';
@@ -38,19 +38,14 @@ export class OAuth2Code extends OAuth2 {
     return this.dpop?.getDPoPKeypair();
   }
 
-  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude: true, isTokenInclude?: boolean): Promise<{ dpop: string } | null>;
-  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude?: false, isTokenInclude?: boolean): Promise<string | null>;
-  async getDPoPProofJWT(method: string, uri: string, isHeaderInclude = false, isTokenInclude = true) {
-    const token = isTokenInclude ? await this.getAuthorization(true).then(e => e.access_token) : undefined;
+  async getDPoPProofJWT(method: string, uri: string, nonce?: string | null, isTokenInclude = true) {
+    const token = isTokenInclude ? await this.getAuthorization(true)
+                                             .then(e => e.access_token) : undefined;
 
-    const jwt = await this.dpop?.getDPoPProofJWT(method, uri, token);
+    const jwt = await this.dpop?.getDPoPProofJWT(method, uri, token, nonce ?? undefined);
 
     if (!jwt) {
       return null;
-    }
-
-    if (isHeaderInclude) {
-      return { dpop: jwt };
     }
 
     return jwt;
@@ -198,43 +193,54 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private async authorizationAccessToken(code: string, pkce: string | null) {
-    return await this.post<OAuth2TokenEndpointAuthorizationCode>(
+    return await this.requestWithDPoP<OAuth2TokenEndpointAuthorizationCode>(
       this.option.endpoint.token,
       {
         grant_type: 'authorization_code',
         code,
         redirect_uri: this.option.client.redirectUri,
         code_verifier: pkce
-      },
-      {
-        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true, false)
       }
     );
   }
 
   private async refreshGetAccessToken(refreshToken: string) {
-    return await this.post<OAuth2TokenEndpointRefreshToken>(
+    return await this.requestWithDPoP<OAuth2TokenEndpointRefreshToken>(
       this.option.endpoint.token,
       {
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
         scope: this.option.client.scopes?.join(' ')
-      },
-      {
-        ...await this.getDPoPProofJWT('POST', this.option.endpoint.token, true, false)
       }
     );
   }
 
+  private async requestWithDPoP<T>(url: string, form: Record<string, string | undefined | null>,
+                                   nonce?: string): Promise<AxiosResponse<T>> {
+    const dpop = await this.getDPoPProofJWT('POST', url, nonce, false);
+
+    const req = this.post<T>(url, form, { ...(dpop ? { dpop } : {}) });
+
+    return await req.catch(error => {
+      if (!error.response.data || typeof error.response.data !== 'object' || typeof error.response.headers['dpop-nonce'] !== 'string') {
+        return Promise.reject(error);
+      }
+
+      return this.requestWithDPoP(url, form, error.response.headers['dpop-nonce']);
+    });
+  }
+
   private post<T>(url: string, form: Record<string, string | undefined | null>, headers: AxiosRequestHeaders = {}) {
-    const formData = Object.entries(form).filter((r): r is [string, string] => typeof r[1] === 'string');
+    const formData = Object.entries(form)
+                           .filter((r): r is [string, string] => typeof r[1] === 'string');
 
     return axios.post<T>
-    (url,
-      new URLSearchParams(formData),
-      {
-        headers: {
-          ...headers,
+                (
+                  url,
+                  new URLSearchParams(formData),
+                  {
+                    headers: {
+                      ...headers,
           authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`)
         }
       });
