@@ -19,15 +19,15 @@
   "author": "soshi1822",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^14.17.12",
-    "ts-loader": "^9.2.5",
-    "ts-node": "^10.2.1",
-    "typescript": "^4.5.2",
-    "webpack": "^5.51.1",
-    "webpack-cli": "^4.9.1"
+    "@types/node": "^16.11.25",
+    "ts-loader": "^9.2.6",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5",
+    "webpack": "^5.69.1",
+    "webpack-cli": "^4.9.2"
   },
   "dependencies": {
-    "axios": "^0.24.0",
-    "nanoid": "^3.1.30"
+    "axios": "^0.26.0",
+    "nanoid": "^3.3.1"
   }
 }
