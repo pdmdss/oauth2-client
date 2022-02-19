@@ -4,9 +4,10 @@
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "module": "dist/esm/index.js",
   "scripts": {
     "publish:npm": "npm publish --access=public",
-    "build:node": "npx tsc",
+    "build:node": "npx tsc && npx tsc --project tsconfig.esm.json",
     "build:browser": "npx webpack --config webpack.browser.config.js",
     "create:declaration": "tsc --declaration --emitDeclarationOnly",
     "prepublishOnly": "npm run create:declaration & npm run build:node"
