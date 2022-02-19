@@ -121,10 +121,6 @@ export class OAuth2Code extends OAuth2 {
 
     this.startWait();
 
-    if (this.option.dpop) {
-      await this.createDPoP(typeof this.option.dpop !== 'string' ? { alg: this.option.dpop.alg } : this.option.dpop);
-    }
-
     const { data } =
       typeof this.option.refreshToken === 'string' ?
         await this.refreshGetAccessToken(this.option.refreshToken) :
@@ -193,18 +189,34 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private async authorizationAccessToken(code: string, pkce: string | null) {
-    return await this.requestWithDPoP<OAuth2TokenEndpointAuthorizationCode>(
-      this.option.endpoint.token,
-      {
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: this.option.client.redirectUri,
-        code_verifier: pkce
+    if (this.option.dpop) {
+      await this.createDPoP(typeof this.option.dpop === 'string' ? { alg: this.option.dpop } : { alg: this.option.dpop.alg });
+    }
+
+    try {
+      return await this.requestWithDPoP<OAuth2TokenEndpointAuthorizationCode>(
+        this.option.endpoint.token,
+        {
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: this.option.client.redirectUri,
+          code_verifier: pkce
+        }
+      );
+    } finally {
+      const keypair = await this.getDPoPKeypair();
+
+      if (keypair) {
+        this.emit('dpop_keypair', keypair);
       }
-    );
+    }
   }
 
   private async refreshGetAccessToken(refreshToken: string) {
+    if (this.option.dpop) {
+      await this.createDPoP(this.option.dpop);
+    }
+
     return await this.requestWithDPoP<OAuth2TokenEndpointRefreshToken>(
       this.option.endpoint.token,
       {
