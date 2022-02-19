@@ -22,6 +22,24 @@ export class OAuth2Code extends OAuth2 {
     super(option);
   }
 
+  emit(event: 'refresh_token', refreshToken: string): boolean;
+  emit(event: 'dpop_keypair', keypair: Keypair): boolean;
+  emit(event: string, ...args: any[]): boolean {
+    return super.emit(event, ...args);
+  }
+
+  on(event: 'refresh_token', listener: (refreshToken: string) => void): this;
+  on(event: 'dpop_keypair', listener: (keypair: Keypair) => void): this;
+  on(event: string, listener: (...args: any[]) => void): this {
+    return super.on(event, listener);
+  }
+
+  once(event: 'refresh_token', listener: (refreshToken: string) => void): this;
+  once(event: 'dpop_keypair', listener: (keypair: Keypair) => void): this;
+  once(event: string, listener: (...args: any[]) => void): this {
+    return super.once(event, listener);
+  }
+
   async getAuthorization(): Promise<string>;
   async getAuthorization(isRaw: true): Promise<{ access_token: string; token_type: string; exp: number }>;
   async getAuthorization(isRaw?: true): Promise<string | { access_token: string; token_type: string; exp: number }> {
@@ -128,6 +146,7 @@ export class OAuth2Code extends OAuth2 {
 
     if (data.refresh_token) {
       this.option.refreshToken = data.refresh_token;
+      this.emit('refresh_token', data.refresh_token);
     }
 
     const exp = new Date();
