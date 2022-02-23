@@ -86,4 +86,16 @@ export class DPoP {
       publicKey
     };
   }
+
+  async toSHA256Thumbprint() {
+    const jwk = await window.crypto.subtle.exportKey('jwk', this.publicKey);
+    const member =
+      jwk.kty === 'EC' ?
+        { crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y } :
+        jwk.kty === 'RS' ?
+          { e: jwk.e, kty: jwk.kty, n: jwk.n } :
+          { k: jwk.k, kty: jwk.kty };
+
+    return await sha256Digest(JSON.stringify(member));
+  }
 }

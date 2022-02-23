@@ -195,6 +195,15 @@ export class OAuth2Code extends OAuth2 {
       query.set('redirect_uri', this.option.client.redirectUri);
     }
 
+    if (this.option.dpop) {
+      const dpop = await this.createDPoP(typeof this.option.dpop === 'string' ? { alg: this.option.dpop } : { alg: this.option.dpop.alg });
+
+      if (dpop) {
+        this.emit('dpop_keypair', await dpop.getDPoPKeypair());
+        query.set('dpop_jkt', await dpop.toSHA256Thumbprint());
+      }
+    }
+
     const { authCode, errorCode } = await SubWindow.open(url.toString(), { state });
 
     if (!authCode || errorCode) {
@@ -208,11 +217,6 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private async authorizationAccessToken(code: string, pkce: string | null) {
-    if (this.option.dpop) {
-      await this.createDPoP(typeof this.option.dpop === 'string' ? { alg: this.option.dpop } : { alg: this.option.dpop.alg });
-    }
-
-    try {
       return await this.requestWithDPoP<OAuth2TokenEndpointAuthorizationCode>(
         this.option.endpoint.token,
         {
@@ -222,13 +226,6 @@ export class OAuth2Code extends OAuth2 {
           code_verifier: pkce
         }
       );
-    } finally {
-      const keypair = await this.getDPoPKeypair();
-
-      if (keypair) {
-        this.emit('dpop_keypair', keypair);
-      }
-    }
   }
 
   private async refreshGetAccessToken(refreshToken: string) {
