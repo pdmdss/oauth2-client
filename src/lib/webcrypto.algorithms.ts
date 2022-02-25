@@ -1,42 +1,41 @@
 import { JWTAlgorithm } from '../types';
 
 export function webCryptoAlgorithmSign(alg: JWTAlgorithm) {
-  const type = alg.substring(0, 2);
-  const length = alg.substring(2);
+  const { type, length } = algType(alg);
 
   if (type === 'RS') {
-    return 'RSASSA-PKCS1-v1_5';
+    return <const>'RSASSA-PKCS1-v1_5';
   }
   if (type === 'PS') {
-    return {
+    return <const>{
       name: 'RSA-PSS',
       saltLength: +length / 8,
     };
   }
   if (type === 'ES') {
-    return {
+    return <const>{
       name: 'ECDSA',
       hash: {
-        name: `SHA-${length}`
+        name: `SHA-${length}`,
       },
     };
   }
   if (type === 'HS') {
-    return 'HMAC';
+    return <const>'HMAC';
   }
 
   return null;
 }
 
 export function webCryptoAlgorithmGenerateKey(alg: JWTAlgorithm) {
-  const type = alg.substring(0, 2);
+  const params =
+    webCryptoAlgorithmImportKey(alg);
 
-  const params = webCryptoAlgorithmImportKey(alg);
-  if (params && 'hash' in params && typeof params.hash === 'string') {
+  if (params && 'hash' in params && (params.name === 'RSASSA-PKCS1-v1_5' || params.name === 'RSA-PSS')) {
     return {
       ...params,
       modulusLength: 4096,
-      publicExponent: new Uint8Array([1, 0, 1])
+      publicExponent: new Uint8Array([1, 0, 1]),
     };
   }
 
@@ -45,35 +44,41 @@ export function webCryptoAlgorithmGenerateKey(alg: JWTAlgorithm) {
 
 
 export function webCryptoAlgorithmImportKey(alg: JWTAlgorithm) {
-  const type = alg.substring(0, 2);
-  const length = alg.substring(2);
+  const { type, length } = algType(alg);
 
   if (type === 'RS') {
-    return {
+    return <const>{
       name: 'RSASSA-PKCS1-v1_5',
-      hash: `SHA-${length}`
+      hash: `SHA-${length}`,
     };
   }
   if (type === 'PS') {
-    return {
+    return <const>{
       name: 'RSA-PSS',
-      hash: `SHA-${length}`
+      hash: `SHA-${length}`,
     };
   }
   if (type === 'ES') {
-    return {
+    return <const>{
       name: 'ECDSA',
-      namedCurve: `P-${length}`
+      namedCurve: `P-${length}`,
     };
   }
   if (type === 'HS') {
-    return {
+    return <const>{
       name: 'HMAC',
       hash: {
-        name: `SHA-${length}`
-      }
+        name: `SHA-${length}`,
+      },
     };
   }
 
   return null;
+}
+
+function algType(alg: JWTAlgorithm) {
+  return {
+    type: <'RS' | 'PS' | 'ES' | 'HS'>alg.substring(0, 2),
+    length: <'256' | '384' | '512'>alg.substring(2),
+  };
 }
