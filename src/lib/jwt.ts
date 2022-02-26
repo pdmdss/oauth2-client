@@ -1,6 +1,6 @@
+import { JWTAlgorithm } from '../types';
 import { BASE64URL } from './base64';
 import { webCryptoAlgorithmSign } from './webcrypto.algorithms';
-import { JWTAlgorithm } from '../types';
 
 export interface JWTHeader {
   typ: string;
@@ -22,9 +22,9 @@ class JWTEncode {
   async sign(key: CryptoKey) {
     const encoder = new TextEncoder();
     const signature = await window.crypto.subtle.sign(
-      webCryptoAlgorithmSign(this.header.alg)!,
-      key,
-      encoder.encode(this.toString().slice(0, -1))
+        webCryptoAlgorithmSign(this.header.alg)!,
+        key,
+        encoder.encode(this.toString().slice(0, -1))
     );
 
     return new JWTEncode(this.header, this.payload, new Uint8Array(signature));

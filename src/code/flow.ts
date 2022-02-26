@@ -1,9 +1,8 @@
 import axios, { AxiosRequestHeaders, AxiosResponse } from 'axios';
 import { nanoid } from 'nanoid';
-import { OAuth2 } from '../oauth2';
 import { DPoP } from '../lib/dpop';
 import { sha256Digest } from '../lib/hash';
-import { SubWindow } from './sub';
+import { OAuth2 } from '../oauth2';
 import {
   DPoPAlgorithm,
   DPoPAlgorithmName,
@@ -11,8 +10,9 @@ import {
   OAuth2CodeOption,
   OAuth2IntrospectEndpoint,
   OAuth2TokenEndpointAuthorizationCode,
-  OAuth2TokenEndpointRefreshToken
+  OAuth2TokenEndpointRefreshToken,
 } from '../types';
+import { SubWindow } from './sub';
 
 export class OAuth2Code extends OAuth2 {
   private waiting = this.option.waitingStart ?? false;
@@ -260,18 +260,17 @@ export class OAuth2Code extends OAuth2 {
 
   private post<T>(url: string, form: Record<string, string | undefined | null>, headers: AxiosRequestHeaders = {}) {
     const formData = Object.entries(form)
-                           .filter((r): r is [string, string] => typeof r[1] === 'string');
+        .filter((r): r is [string, string] => typeof r[1] === 'string');
 
-    return axios.post<T>
-                (
-                  url,
-                  new URLSearchParams(formData),
-                  {
-                    headers: {
-                      ...headers,
-          authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`)
-        }
-      });
+    return axios.post<T>(
+        url,
+        new URLSearchParams(formData),
+        {
+          headers: {
+            ...headers,
+            authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`),
+          },
+        });
   }
 
   private async createDPoP(data: DPoPAlgorithm | DPoPAlgorithmName | Keypair) {

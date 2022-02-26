@@ -1,5 +1,5 @@
-import { OAuth2Option } from './types';
 import { Events } from './lib/events';
+import { OAuth2Option } from './types';
 
 export class OAuth2 extends Events {
   protected accessToken?: {
