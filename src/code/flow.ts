@@ -10,7 +10,7 @@ import {
   OAuth2CodeOption,
   OAuth2IntrospectEndpoint,
   OAuth2TokenEndpointAuthorizationCode,
-  OAuth2TokenEndpointRefreshToken,
+  OAuth2TokenEndpointRefreshToken
 } from '../types';
 import { SubWindow } from './sub';
 
@@ -250,7 +250,7 @@ export class OAuth2Code extends OAuth2 {
     const req = this.post<T>(url, form, { ...(dpop ? { dpop } : {}) });
 
     return await req.catch(error => {
-      if (!error.response.data || typeof error.response.data !== 'object' || typeof error.response.headers['dpop-nonce'] !== 'string') {
+      if (!error.response.data || typeof error.response.data !== 'object' || error.response.data.error !== 'use_dpop_nonce' || typeof error.response.headers['dpop-nonce'] !== 'string') {
         return Promise.reject(error);
       }
 
