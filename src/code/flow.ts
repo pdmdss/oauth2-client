@@ -123,14 +123,19 @@ export class OAuth2Code extends OAuth2 {
 
     this.startWait();
 
+    const refreshToken = this.option.refreshToken instanceof Promise ?
+                         await this.option.refreshToken : this.option.refreshToken;
+
     const { data } =
-      typeof this.option.refreshToken === 'string' ?
-      await this.refreshGetAccessToken(this.option.refreshToken) :
+      typeof refreshToken === 'string' ?
+      await this.refreshGetAccessToken(refreshToken) :
       await this.authorization();
 
     if (data.refresh_token) {
       this.option.refreshToken = data.refresh_token;
       this.emit('refresh_token', data.refresh_token);
+    } else {
+      this.refresh_token ??= refreshToken ?? null;
     }
 
     const exp = new Date();
