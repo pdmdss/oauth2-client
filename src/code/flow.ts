@@ -8,7 +8,6 @@ import {
   DPoPAlgorithmName,
   Keypair,
   OAuth2CodeOption,
-  OAuth2IntrospectEndpoint,
   OAuth2TokenEndpointAuthorizationCode,
   OAuth2TokenEndpointRefreshToken
 } from '../types';
@@ -97,22 +96,6 @@ export class OAuth2Code extends OAuth2 {
     await this.post(endpoint, { token: token });
 
     return true;
-  }
-
-  async introspect(type: 'access_token' | 'refresh_token' = 'access_token') {
-    const endpoint = this.option.endpoint.introspect;
-
-    if (!endpoint) {
-      return false;
-    }
-
-    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.access_token;
-
-    if (!token) {
-      return null;
-    }
-
-    return this.post<OAuth2IntrospectEndpoint>(endpoint, { token: token });
   }
 
   private authorizationWaiting() {
