@@ -35,10 +35,10 @@ export interface OAuth2Option {
 }
 
 export interface OAuth2CodeOption extends OAuth2Option {
-  refreshToken?: string;
+  refreshToken?: string | Promise<string>;
   pkce?: 'S256' | 'plain' | true;
   waitingStart?: boolean;
-  dpop?: Keypair | DPoPAlgorithmName | DPoPAlgorithm;
+  dpop?: Keypair | DPoPAlgorithmName | DPoPAlgorithm | Promise<Keypair | DPoPAlgorithmName | DPoPAlgorithm>;
 }
 
 export interface OAuth2TokenEndpointAuthorizationCode {

@@ -15,6 +15,7 @@ import { SubWindow } from './sub';
 
 export class OAuth2Code extends OAuth2 {
   private waiting = this.option.waitingStart ?? false;
+  private refresh_token: string | null = null;
   private dpop: DPoP | null = null;
 
   constructor(private option: OAuth2CodeOption) {
@@ -57,7 +58,7 @@ export class OAuth2Code extends OAuth2 {
 
   async getDPoPProofJWT(method: string, uri: string, nonce?: string | null, isTokenInclude = true) {
     const token = isTokenInclude ? await this.getAuthorization(true)
-                                             .then(e => e.access_token) : undefined;
+      .then(e => e.access_token) : undefined;
 
     const jwt = await this.dpop?.getDPoPProofJWT(method, uri, token, nonce ?? undefined);
 
@@ -87,7 +88,7 @@ export class OAuth2Code extends OAuth2 {
       return false;
     }
 
-    const token = type === 'refresh_token' ? this.option.refreshToken : this.accessToken?.access_token;
+    const token = type === 'refresh_token' ? this.refresh_token : this.accessToken?.access_token;
 
     if (!token) {
       return true;
@@ -124,8 +125,8 @@ export class OAuth2Code extends OAuth2 {
 
     const { data } =
       typeof this.option.refreshToken === 'string' ?
-        await this.refreshGetAccessToken(this.option.refreshToken) :
-        await this.authorization();
+      await this.refreshGetAccessToken(this.option.refreshToken) :
+      await this.authorization();
 
     if (data.refresh_token) {
       this.option.refreshToken = data.refresh_token;
@@ -179,11 +180,14 @@ export class OAuth2Code extends OAuth2 {
     }
 
     if (this.option.dpop) {
-      const dpop = await this.createDPoP(typeof this.option.dpop === 'string' ? { alg: this.option.dpop } : { alg: this.option.dpop.alg });
+      const optionDPoP = this.option.dpop instanceof Promise ? await this.option.dpop : this.option.dpop;
 
-      if (dpop) {
-        this.emit('dpop_keypair', await dpop.getDPoPKeypair());
-        query.set('dpop_jkt', await dpop.toSHA256Thumbprint());
+      const DPoP = await this.createDPoP(typeof optionDPoP === 'string' ?
+        { alg: optionDPoP } : { alg: optionDPoP.alg });
+
+      if (DPoP) {
+        this.emit('dpop_keypair', await DPoP.getDPoPKeypair());
+        query.set('dpop_jkt', await DPoP.toSHA256Thumbprint());
       }
     }
 
@@ -200,19 +204,19 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private async authorizationAccessToken(code: string, pkce: string | null) {
-      return await this.requestWithDPoP<OAuth2TokenEndpointAuthorizationCode>(
-        this.option.endpoint.token,
-        {
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: this.option.client.redirectUri,
-          code_verifier: pkce
-        }
-      );
+    return await this.requestWithDPoP<OAuth2TokenEndpointAuthorizationCode>(
+      this.option.endpoint.token,
+      {
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: this.option.client.redirectUri,
+        code_verifier: pkce
+      }
+    );
   }
 
   private async refreshGetAccessToken(refreshToken: string) {
-    if (this.option.dpop) {
+    if (!this.dpop && this.option.dpop) {
       await this.createDPoP(this.option.dpop);
     }
 
@@ -243,20 +247,21 @@ export class OAuth2Code extends OAuth2 {
 
   private post<T>(url: string, form: Record<string, string | undefined | null>, headers: AxiosRequestHeaders = {}) {
     const formData = Object.entries(form)
-        .filter((r): r is [string, string] => typeof r[1] === 'string');
+      .filter((r): r is [string, string] => typeof r[1] === 'string');
 
     return axios.post<T>(
-        url,
-        new URLSearchParams(formData),
-        {
-          headers: {
-            ...headers,
-            authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`),
-          },
-        });
+      url,
+      new URLSearchParams(formData),
+      {
+        headers: {
+          ...headers,
+          authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`)
+        }
+      }
+    );
   }
 
-  private async createDPoP(data: DPoPAlgorithm | DPoPAlgorithmName | Keypair) {
-    return this.dpop = await DPoP.create(data);
+  private async createDPoP(data: DPoPAlgorithm | DPoPAlgorithmName | Keypair | Promise<DPoPAlgorithm | DPoPAlgorithmName | Keypair>) {
+    return this.dpop = await DPoP.create(data instanceof Promise ? await data : data);
   }
 }
