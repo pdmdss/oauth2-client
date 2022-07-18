@@ -124,14 +124,20 @@ export class OAuth2Code extends OAuth2 {
     this.startWait();
 
     const refreshToken = this.option.refreshToken instanceof Promise ?
-                         await this.option.refreshToken : this.option.refreshToken;
+      await this.option.refreshToken : this.option.refreshToken;
 
     const { data } =
       typeof refreshToken === 'string' ?
-      await this.refreshGetAccessToken(refreshToken) :
-      await this.authorization();
+        await this.refreshGetAccessToken(refreshToken) :
+        await this.authorization();
 
-    if (data.refresh_token) {
+    const allowedScopes = data.scope.split(/\s/);
+    if (this.option.client.scopes?.every(scope => allowedScopes.includes(scope)) === false) {
+      this.option.refreshToken = undefined;
+      return Promise.reject();
+    }
+
+    if ('refresh_token' in data) {
       this.option.refreshToken = data.refresh_token;
       this.emit('refresh_token', data.refresh_token);
     } else {
