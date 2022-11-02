@@ -1,4 +1,4 @@
-import axios, { AxiosRequestHeaders, AxiosResponse } from 'axios';
+import axios, { AxiosResponse, RawAxiosRequestHeaders } from 'axios';
 import { nanoid } from 'nanoid';
 import { DPoP } from '../lib/dpop';
 import { sha256Digest } from '../lib/hash';
@@ -124,12 +124,12 @@ export class OAuth2Code extends OAuth2 {
     this.startWait();
 
     const refreshToken = this.option.refreshToken instanceof Promise ?
-      await this.option.refreshToken : this.option.refreshToken;
+                         await this.option.refreshToken : this.option.refreshToken;
 
     const { data } =
       typeof refreshToken === 'string' ?
-        await this.refreshGetAccessToken(refreshToken) :
-        await this.authorization();
+      await this.refreshGetAccessToken(refreshToken) :
+      await this.authorization();
 
     const allowedScopes = data.scope.split(/\s/);
     if (this.option.client.scopes?.every(scope => allowedScopes.includes(scope)) === false) {
@@ -256,7 +256,7 @@ export class OAuth2Code extends OAuth2 {
     });
   }
 
-  private post<T>(url: string, form: Record<string, string | undefined | null>, headers: AxiosRequestHeaders = {}) {
+  private post<T>(url: string, form: Record<string, string | undefined | null>, headers: RawAxiosRequestHeaders = {}) {
     const formData = Object.entries(form)
       .filter((r): r is [string, string] => typeof r[1] === 'string');
 
