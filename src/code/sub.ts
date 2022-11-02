@@ -62,7 +62,7 @@ export class SubWindowMode {
   static get isSubWindowMode() {
     try {
       return window.opener?.closed === false &&
-        new RegExp('^' + window.opener.location.href).test(window.location.href);
+        new RegExp('^' + window.opener.location.origin).test(window.location.origin);
     } catch (e) {
       return false;
     }
