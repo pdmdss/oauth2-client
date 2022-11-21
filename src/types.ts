@@ -12,8 +12,7 @@ export interface DPoPAlgorithmName {
 
 export interface Keypair {
   alg: DPoPAlgorithm;
-  privateKey: JsonWebKey;
-  publicKey: JsonWebKey;
+  keyPair: CryptoKeyPair;
 }
 
 
