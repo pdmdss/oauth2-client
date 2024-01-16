@@ -70,7 +70,7 @@ export class DPoP {
     const member =
       jwk.kty === 'EC' ?
         { crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y } :
-        jwk.kty === 'RS' ?
+        jwk.kty === 'RSA' ?
           { e: jwk.e, kty: jwk.kty, n: jwk.n } :
           { k: jwk.k, kty: jwk.kty };
 
