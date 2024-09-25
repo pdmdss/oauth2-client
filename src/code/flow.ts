@@ -1,5 +1,3 @@
-import axios, { AxiosResponse, RawAxiosRequestHeaders } from 'axios';
-import { nanoid } from 'nanoid';
 import { DPoP } from '../lib/dpop';
 import { sha256Digest } from '../lib/hash';
 import { OAuth2 } from '../oauth2';
@@ -126,10 +124,10 @@ export class OAuth2Code extends OAuth2 {
     const refreshToken = this.option.refreshToken instanceof Promise ?
                          await this.option.refreshToken : this.option.refreshToken;
 
-    const { data } =
+    const data =
       typeof refreshToken === 'string' ?
-      await this.refreshGetAccessToken(refreshToken) :
-      await this.authorization();
+        await this.refreshGetAccessToken(refreshToken) :
+        await this.authorization();
 
     const allowedScopes = data.scope.split(/\s/);
     if (this.option.client.scopes?.every(scope => allowedScopes.includes(scope)) === false) {
@@ -161,7 +159,7 @@ export class OAuth2Code extends OAuth2 {
   }
 
   private async authorization() {
-    const state = nanoid(32);
+    const state = window.crypto.randomUUID();
 
     const url = new URL(this.option.endpoint.authorization);
     const query = url.searchParams;
@@ -177,7 +175,7 @@ export class OAuth2Code extends OAuth2 {
         this.option.pkce = 'S256';
       }
 
-      pkce = nanoid(43);
+      pkce = window.crypto.randomUUID();
 
       query.set('code_challenge', await sha256Digest(pkce));
       query.set('code_challenge_method', this.option.pkce);
@@ -241,29 +239,33 @@ export class OAuth2Code extends OAuth2 {
     );
   }
 
-  private async requestWithDPoP<T>(url: string, form: Record<string, string | undefined | null>,
-                                   nonce?: string): Promise<AxiosResponse<T>> {
+  private async requestWithDPoP<T>(url: string, form: Record<string, string | undefined | null>, nonce?: string): Promise<T> {
     const dpop = await this.getDPoPProofJWT('POST', url, nonce, false);
 
-    const req = this.post<T>(url, form, { ...(dpop ? { dpop } : {}) });
+    const response = await this.post<T>(url, form, { ...(dpop ? { dpop } : {}) });
+    const data = await response.json().catch(() => null);
 
-    return await req.catch(error => {
-      if (!error.response.data || typeof error.response.data !== 'object' || error.response.data.error !== 'use_dpop_nonce' || typeof error.response.headers['dpop-nonce'] !== 'string') {
-        return Promise.reject(error);
+    if (response.status > 299) {
+      const dpopNonce = response.headers.get('dpop-nonce');
+      if (!data || typeof data !== 'object' || data.error !== 'use_dpop_nonce' || typeof dpopNonce !== 'string') {
+        return Promise.reject(data);
       }
 
-      return this.requestWithDPoP(url, form, error.response.headers['dpop-nonce']);
-    });
+      return this.requestWithDPoP(url, form, dpopNonce);
+    }
+
+    return data;
   }
 
-  private post<T>(url: string, form: Record<string, string | undefined | null>, headers: RawAxiosRequestHeaders = {}) {
+  private post<T>(url: string, form: Record<string, string | undefined | null>, headers: Record<string, any> = {}) {
     const formData = Object.entries(form)
       .filter((r): r is [string, string] => typeof r[1] === 'string');
 
-    return axios.post<T>(
+    return fetch(
       url,
-      new URLSearchParams(formData),
       {
+        method: 'post',
+        body: new URLSearchParams(formData),
         headers: {
           ...headers,
           authorization: 'Basic ' + btoa(`${this.option.client.id}:${this.option.client.secret}`)

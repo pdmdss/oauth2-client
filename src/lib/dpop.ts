@@ -1,5 +1,4 @@
 import { JWT } from './jwt';
-import { nanoid } from 'nanoid';
 import { webCryptoAlgorithmGenerateKey } from './webcrypto.algorithms';
 import { DPoPAlgorithm, DPoPAlgorithmName, Keypair } from '../types';
 import { sha256Digest } from './hash';
@@ -42,7 +41,7 @@ export class DPoP {
         jwk: await this.getPublicJWK()
       },
       {
-        jti: nanoid(12),
+        jti: window.crypto.randomUUID(),
         htm: method,
         htu: uri,
         iat: ~~((Date.now() / 1000)),
