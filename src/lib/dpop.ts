@@ -39,7 +39,7 @@ export class DPoP {
       {
         typ: 'dpop+jwt',
         alg: this.algorithm,
-        jwk: this.getPublicJWK()
+        jwk: await this.getPublicJWK()
       },
       {
         jti: nanoid(12),
